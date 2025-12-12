@@ -44,11 +44,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Header */}
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-           {/* Qwen Logo */}
-           <div className="w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden">
-             <img src={QWEN_LOGO_URL} alt="Qwen Logo" className="w-full h-full object-cover" />
+           {/* Brand Logo */}
+           <div className="w-10 h-10 flex items-center justify-center rounded-lg overflow-hidden">
+             <img src={QWEN_LOGO_URL} alt="Brand Logo" className="w-full h-full object-contain" />
            </div>
-          <span className="text-[22px] font-bold text-gray-800 dark:text-gray-200 tracking-tight">Qwen</span>
         </div>
         <button onClick={onToggle} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#27272A]">
           <PanelLeftClose size={20} />

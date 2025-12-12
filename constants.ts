@@ -25,4 +25,4 @@ export const INITIAL_SUGGESTIONS = [
 ];
 
 export const USER_NAME = "AJ COMPANY";
-export const QWEN_LOGO_URL = "https://z-cdn-media.chatglm.cn/files/77098327-769c-44a0-b80f-b380d7f15333.png?auth_key=1797051279-f6d2401d782d46aa9d506f9a810b12df-0-542088c7e194291282c363dec25c7468";
+export const QWEN_LOGO_URL = "/images (1).png";
