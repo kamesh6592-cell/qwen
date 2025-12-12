@@ -136,79 +136,92 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
              </div>
           )}
 
+          {/* Attachments / Images */}
+          {message.attachments && message.attachments.length > 0 && (
+             <div className={`grid gap-2 mb-3 ${message.attachments.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} ${isUser ? 'max-w-xs' : 'max-w-2xl'}`}>
+                {message.attachments.map((att, i) => (
+                  <div key={i} className="rounded-xl overflow-hidden border border-gray-200 dark:border-[#2e2e32] shadow-sm">
+                     <img src={att.data} alt="attachment" className="w-full h-auto object-cover" />
+                  </div>
+                ))}
+             </div>
+          )}
+
           {/* Message Content */}
-          <div className={`relative text-[15px] leading-7 ${
-            isUser 
-              ? 'bg-[#f4f4f5] dark:bg-[#2F2F32] text-gray-800 dark:text-gray-100 px-5 py-3.5 rounded-[20px] rounded-tr-sm' 
-              : 'text-gray-800 dark:text-gray-200 w-full'
-          }`}>
-             {isUser ? (
-               message.text
-             ) : (
-                <div className="prose dark:prose-invert max-w-none 
-                  prose-p:text-[15px] prose-p:leading-7 prose-p:text-gray-800 dark:prose-p:text-gray-200 prose-p:my-3 
-                  prose-headings:font-semibold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-headings:mt-6 prose-headings:mb-3 
-                  prose-ul:my-3 prose-ul:list-disc prose-ul:pl-4 
-                  prose-ol:my-3 prose-ol:list-decimal prose-ol:pl-4
-                  prose-li:my-1 prose-li:text-gray-800 dark:prose-li:text-gray-200
-                  prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
-                  prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
-                  prose-blockquote:border-l-4 prose-blockquote:border-gray-200 dark:prose-blockquote:border-gray-700 prose-blockquote:pl-4 prose-blockquote:italic
-                  ">
-                  <ReactMarkdown
-                    components={{
-                      code({node, inline, className, children, ...props}: any) {
-                        const match = /language-(\w+)/.exec(className || '');
-                        const lang = match ? match[1] : '';
-                        const codeString = String(children).replace(/\n$/, '');
-                        const isHtml = lang === 'html';
-                        
-                        if (!inline && match) {
-                          return (
-                            <div className="rounded-xl overflow-hidden my-5 border border-gray-200 dark:border-[#2e2e32] bg-[#FAFAFA] dark:bg-[#0f0f11] shadow-sm">
-                              <div className="flex items-center justify-between px-4 py-2 bg-[#F4F4F5] dark:bg-[#1a1a1d] border-b border-gray-200 dark:border-[#2e2e32]">
-                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono lowercase">{lang}</span>
-                                <div className="flex items-center gap-3">
-                                  {/* Removed internal preview button */}
-                                  <button 
-                                    onClick={() => handleCopy(codeString)}
-                                    className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                                    title="Copy code"
+          {message.text && (
+            <div className={`relative text-[15px] leading-7 ${
+              isUser 
+                ? 'bg-[#f4f4f5] dark:bg-[#2F2F32] text-gray-800 dark:text-gray-100 px-5 py-3.5 rounded-[20px] rounded-tr-sm' 
+                : 'text-gray-800 dark:text-gray-200 w-full'
+            }`}>
+              {isUser ? (
+                message.text
+              ) : (
+                  <div className="prose dark:prose-invert max-w-none 
+                    prose-p:text-[15px] prose-p:leading-7 prose-p:text-gray-800 dark:prose-p:text-gray-200 prose-p:my-3 
+                    prose-headings:font-semibold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-headings:mt-6 prose-headings:mb-3 
+                    prose-ul:my-3 prose-ul:list-disc prose-ul:pl-4 
+                    prose-ol:my-3 prose-ol:list-decimal prose-ol:pl-4
+                    prose-li:my-1 prose-li:text-gray-800 dark:prose-li:text-gray-200
+                    prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
+                    prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                    prose-blockquote:border-l-4 prose-blockquote:border-gray-200 dark:prose-blockquote:border-gray-700 prose-blockquote:pl-4 prose-blockquote:italic
+                    ">
+                    <ReactMarkdown
+                      components={{
+                        code({node, inline, className, children, ...props}: any) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const lang = match ? match[1] : '';
+                          const codeString = String(children).replace(/\n$/, '');
+                          const isHtml = lang === 'html';
+                          
+                          if (!inline && match) {
+                            return (
+                              <div className="rounded-xl overflow-hidden my-5 border border-gray-200 dark:border-[#2e2e32] bg-[#FAFAFA] dark:bg-[#0f0f11] shadow-sm">
+                                <div className="flex items-center justify-between px-4 py-2 bg-[#F4F4F5] dark:bg-[#1a1a1d] border-b border-gray-200 dark:border-[#2e2e32]">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono lowercase">{lang}</span>
+                                  <div className="flex items-center gap-3">
+                                    {/* Removed internal preview button */}
+                                    <button 
+                                      onClick={() => handleCopy(codeString)}
+                                      className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                                      title="Copy code"
+                                    >
+                                      {copiedCode === codeString ? <Check size={14} /> : <Copy size={14} />}
+                                      {copiedCode === codeString ? 'Copied' : 'Copy'}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="p-0 overflow-x-auto text-[13px]">
+                                  <SyntaxHighlighter
+                                    language={lang}
+                                    style={isDarkMode ? vscDarkPlus : vs}
+                                    customStyle={{ margin: 0, padding: '1.25rem', background: 'transparent' }} // Let container handle bg
+                                    wrapLongLines={true}
                                   >
-                                    {copiedCode === codeString ? <Check size={14} /> : <Copy size={14} />}
-                                    {copiedCode === codeString ? 'Copied' : 'Copy'}
-                                  </button>
+                                    {codeString}
+                                  </SyntaxHighlighter>
                                 </div>
                               </div>
-                              <div className="p-0 overflow-x-auto text-[13px]">
-                                <SyntaxHighlighter
-                                  language={lang}
-                                  style={isDarkMode ? vscDarkPlus : vs}
-                                  customStyle={{ margin: 0, padding: '1.25rem', background: 'transparent' }} // Let container handle bg
-                                  wrapLongLines={true}
-                                >
-                                  {codeString}
-                                </SyntaxHighlighter>
-                              </div>
-                            </div>
+                            );
+                          }
+                          return (
+                            <code 
+                              className={`font-mono text-[13px] bg-gray-100 dark:bg-[#2F2F32] text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded-md border border-gray-200 dark:border-[#3F3F46]/50 ${className}`} 
+                              {...props}
+                            >
+                              {children}
+                            </code>
                           );
                         }
-                        return (
-                          <code 
-                            className={`font-mono text-[13px] bg-gray-100 dark:bg-[#2F2F32] text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded-md border border-gray-200 dark:border-[#3F3F46]/50 ${className}`} 
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      }
-                    }}
-                  >
-                    {message.text}
-                  </ReactMarkdown>
-                </div>
-             )}
-          </div>
+                      }}
+                    >
+                      {message.text}
+                    </ReactMarkdown>
+                  </div>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons (Only for AI, after generation) */}
           {showActions && (

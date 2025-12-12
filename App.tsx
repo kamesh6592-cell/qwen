@@ -5,7 +5,7 @@ import { EmptyState } from './components/EmptyState';
 import { ChatMessage } from './components/ChatMessage';
 import { ArtifactPanel } from './components/ArtifactPanel';
 import { Settings } from './components/Settings';
-import { ChatSession, Message, GeminiModel, Theme } from './types';
+import { ChatSession, Message, GeminiModel, Theme, Attachment } from './types';
 import { INITIAL_SUGGESTIONS, MODELS } from './constants';
 import { streamChatResponse } from './services/geminiService';
 import { PanelLeft, ChevronDown, SquareSplitHorizontal } from 'lucide-react';
@@ -115,7 +115,7 @@ const App: React.FC = () => {
     if (isMobile) setIsSidebarOpen(false);
   };
 
-  const handleSendMessage = async (text: string, useSearch: boolean, useThinking: boolean) => {
+  const handleSendMessage = async (text: string, useSearch: boolean, useThinking: boolean, attachments: Attachment[] = []) => {
     if (!currentSessionId) return;
 
     const session = getCurrentSession();
@@ -126,6 +126,7 @@ const App: React.FC = () => {
       role: 'user',
       text,
       timestamp: Date.now(),
+      attachments: attachments
     };
 
     const updatedSessions = sessions.map((s) => {
@@ -133,7 +134,7 @@ const App: React.FC = () => {
         return {
           ...s,
           messages: [...s.messages, userMessage],
-          title: s.messages.length === 0 ? text.slice(0, 30) : s.title
+          title: s.messages.length === 0 ? (text.slice(0, 30) || 'New Conversation') : s.title
         };
       }
       return s;
@@ -160,10 +161,25 @@ const App: React.FC = () => {
     try {
       let accumulatedText = "";
       
-      const apiHistory = session.messages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }]
-      }));
+      const apiHistory = session.messages.map(m => {
+        const parts: any[] = [];
+        if (m.text) parts.push({ text: m.text });
+        if (m.attachments) {
+           m.attachments.forEach(att => {
+             const base64Data = att.data.split(',')[1];
+             parts.push({
+               inlineData: {
+                 mimeType: att.mimeType,
+                 data: base64Data
+               }
+             })
+           });
+        }
+        return {
+          role: m.role,
+          parts: parts
+        };
+      });
 
       await streamChatResponse(
         currentModel,
@@ -171,13 +187,20 @@ const App: React.FC = () => {
         text,
         useSearch,
         useThinking,
-        (chunk) => {
-          accumulatedText += chunk;
+        attachments,
+        (update) => {
+          if (update.text) {
+             accumulatedText += update.text;
+          }
           setSessions((prev) => prev.map((s) => {
             if (s.id === currentSessionId) {
               const updatedMessages = s.messages.map((m) => {
                 if (m.id === aiMessageId) {
-                  return { ...m, text: accumulatedText };
+                  return { 
+                    ...m, 
+                    text: accumulatedText,
+                    attachments: update.images ? [...(m.attachments || []), ...update.images] : m.attachments
+                  };
                 }
                 return m;
               });
@@ -225,7 +248,7 @@ const App: React.FC = () => {
             currentSessionId={currentSessionId}
             onSelectSession={handleSessionSelect}
             onNewChat={createNewSession}
-            isOpen={true} // Always render internal content, layout handled by parent div
+            isOpen={true} 
             onToggle={() => setIsSidebarOpen(false)}
             onOpenSettings={() => setIsSettingsOpen(true)}
           />
@@ -244,10 +267,29 @@ const App: React.FC = () => {
               </button>
             )}
             <div className="flex items-center gap-2 md:gap-3">
-              <button className="flex items-center gap-2 text-[15px] md:text-[17px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1F1F22] px-3 py-1.5 rounded-lg transition-colors group">
-                <span className="truncate max-w-[120px] md:max-w-none">{MODELS.find(m => m.id === currentModel)?.name || 'Qwen3-Max'}</span>
-                <ChevronDown size={16} className="text-gray-500 group-hover:text-gray-800 dark:group-hover:text-gray-300 flex-shrink-0" strokeWidth={2.5} />
-              </button>
+              <div className="relative group">
+                <button className="flex items-center gap-2 text-[15px] md:text-[17px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1F1F22] px-3 py-1.5 rounded-lg transition-colors group">
+                  <span className="truncate max-w-[120px] md:max-w-none">{MODELS.find(m => m.id === currentModel)?.name || 'Qwen3-Max'}</span>
+                  <ChevronDown size={16} className="text-gray-500 group-hover:text-gray-800 dark:group-hover:text-gray-300 flex-shrink-0" strokeWidth={2.5} />
+                </button>
+                {/* Model Dropdown */}
+                 <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-[#2e2e32] rounded-xl shadow-xl overflow-hidden hidden group-hover:block z-50">
+                   {MODELS.map(model => (
+                     <button
+                       key={model.id}
+                       onClick={() => setCurrentModel(model.id)}
+                       className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#2a2a2e] transition-colors flex flex-col ${currentModel === model.id ? 'bg-gray-50 dark:bg-[#2a2a2e]' : ''}`}
+                     >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{model.name}</span>
+                          {model.isPro && <span className="text-[10px] bg-[#5848BC] text-white px-1.5 py-0.5 rounded">PRO</span>}
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{model.description}</span>
+                     </button>
+                   ))}
+                 </div>
+              </div>
+
                {activeArtifact && (
                  <button 
                     onClick={() => setIsArtifactOpen(!isArtifactOpen)}

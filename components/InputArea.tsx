@@ -8,12 +8,14 @@ import {
   FileText,
   Image as ImageIcon,
   Video,
-  Mic
+  Mic,
+  X
 } from 'lucide-react';
 import { useToast } from './Toast';
+import { Attachment } from '../types';
 
 interface InputAreaProps {
-  onSendMessage: (text: string, useSearch: boolean, useThinking: boolean) => void;
+  onSendMessage: (text: string, useSearch: boolean, useThinking: boolean, attachments: Attachment[]) => void;
   isLoading: boolean;
   suggestions?: { icon: any; label: string; prompt: string }[];
 }
@@ -23,8 +25,11 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSendMessage, isLoading, 
   const [isSearchEnabled, setIsSearchEnabled] = useState(false);
   const [isThinkingEnabled, setIsThinkingEnabled] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -48,9 +53,10 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSendMessage, isLoading, 
   }, []);
 
   const handleSend = () => {
-    if (!input.trim() || isLoading) return;
-    onSendMessage(input, isSearchEnabled, isThinkingEnabled);
+    if ((!input.trim() && attachments.length === 0) || isLoading) return;
+    onSendMessage(input, isSearchEnabled, isThinkingEnabled, attachments);
     setInput('');
+    setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
@@ -62,16 +68,84 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSendMessage, isLoading, 
   };
 
   const handleAttachmentClick = (type: string) => {
-      showToast(`${type} upload coming soon`, 'info');
+      if (type === 'Image' && fileInputRef.current) {
+        fileInputRef.current.click();
+      } else {
+        showToast(`${type} upload coming soon`, 'info');
+      }
       setIsPlusMenuOpen(false);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files) as File[];
+      const newAttachments: Attachment[] = [];
+
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        
+        try {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          
+          // Remove prefix for data (e.g., "data:image/png;base64,")
+          // But keep full string for preview, separation handled in submission
+          newAttachments.push({
+            mimeType: file.type,
+            data: base64
+          });
+        } catch (err) {
+          console.error("Error reading file", err);
+          showToast("Failed to upload image", 'error');
+        }
+      }
+      
+      setAttachments(prev => [...prev, ...newAttachments]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
     <div className="w-full mx-auto pb-4">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        multiple 
+        onChange={handleFileSelect}
+      />
       
       {/* Main Input Container */}
-      <div className={`relative bg-white dark:bg-[#2F2F32] rounded-[26px] transition-all duration-200 shadow-lg border border-gray-200 dark:border-transparent flex flex-col mx-2 md:mx-0 ${input.length > 50 ? 'rounded-[20px]' : ''}`}>
+      <div className={`relative bg-white dark:bg-[#2F2F32] rounded-[26px] transition-all duration-200 shadow-lg border border-gray-200 dark:border-transparent flex flex-col mx-2 md:mx-0 ${input.length > 50 || attachments.length > 0 ? 'rounded-[20px]' : ''}`}>
         
+        {/* Attachments Preview */}
+        {attachments.length > 0 && (
+          <div className="px-4 pt-4 flex gap-3 overflow-x-auto scrollbar-hide">
+            {attachments.map((att, i) => (
+              <div key={i} className="relative group shrink-0">
+                <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                  <img src={att.data} alt="preview" className="w-full h-full object-cover" />
+                </div>
+                <button 
+                  onClick={() => removeAttachment(i)}
+                  className="absolute -top-1.5 -right-1.5 bg-gray-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Text Area */}
         <textarea
           ref={textareaRef}
@@ -150,14 +224,14 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSendMessage, isLoading, 
             {/* Send Button */}
             <button 
               onClick={handleSend}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && attachments.length === 0) || isLoading}
               className={`w-9 h-9 rounded-full transition-all duration-200 flex items-center justify-center ${
-                input.trim() 
+                (input.trim() || attachments.length > 0)
                   ? 'bg-[#5848BC] text-white shadow-md hover:bg-[#4d3eb0]' 
                   : 'bg-gray-200 dark:bg-[#3E3E42] text-gray-400 dark:text-gray-500'
               }`}
             >
-              {input.trim() ? (
+              {(input.trim() || attachments.length > 0) ? (
                 <ArrowUp size={18} strokeWidth={3} />
               ) : (
                  <div className="w-full h-full flex items-center justify-center">
@@ -169,7 +243,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSendMessage, isLoading, 
                  </div>
               )}
             </button>
-             {input.trim() && (
+             {(input.trim() || attachments.length > 0) && (
                 <div className="hidden md:block">
                   <Tooltip text="Send message" />
                 </div>
@@ -178,14 +252,14 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSendMessage, isLoading, 
         </div>
       </div>
 
-      {/* Suggestions Pills - Responsive Scrollable Container */}
+      {/* Suggestions Pills */}
       {suggestions && suggestions.length > 0 && (
         <div className="w-full overflow-x-auto scrollbar-hide mt-4 md:mt-6 px-2 md:px-0">
           <div className="flex flex-nowrap md:flex-wrap md:justify-center gap-2 min-w-max md:min-w-0 px-2 pb-2">
             {suggestions.map((s, i) => (
               <button
                 key={i}
-                onClick={() => onSendMessage(s.prompt, false, false)}
+                onClick={() => onSendMessage(s.prompt, false, false, [])}
                 className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-[#1f1f23] hover:bg-gray-50 dark:hover:bg-[#2a2a2e] border border-gray-200 dark:border-[#2e2e32] rounded-full text-[13px] font-medium text-gray-600 dark:text-gray-300 transition-all shadow-sm group whitespace-nowrap"
               >
                 <s.icon size={16} className="text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300" />

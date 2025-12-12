@@ -1,3 +1,4 @@
+
 import { GeminiModel, ModelConfig } from './types';
 import { 
   Image, 
@@ -12,6 +13,7 @@ import {
 export const MODELS: ModelConfig[] = [
   { id: GeminiModel.FLASH, name: 'Qwen3-Max', description: 'Great for complex tasks', isPro: true },
   { id: GeminiModel.PRO, name: 'Qwen3-Plus', description: 'Fast and versatile', isPro: false },
+  { id: GeminiModel.IMAGE, name: 'Qwen-Visual', description: 'Generate & Edit Images', isPro: true },
 ];
 
 export const INITIAL_SUGGESTIONS = [

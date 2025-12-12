@@ -1,16 +1,17 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { GeminiModel } from "../types";
+import { GeminiModel, Attachment } from "../types";
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const streamChatResponse = async (
   modelId: string,
-  history: { role: string; parts: { text: string }[] }[],
+  history: any[], // Adjusted for flexibility
   message: string,
   useSearch: boolean,
   useThinking: boolean,
-  onChunk: (text: string) => void
+  currentAttachments: Attachment[],
+  onUpdate: (content: { text: string, images?: Attachment[] }) => void
 ) => {
   try {
     const modelName = modelId;
@@ -27,8 +28,26 @@ export const streamChatResponse = async (
     };
 
     if (useThinking && (modelName.includes('2.5') || modelName.includes('pro'))) {
-      // Thinking config is only for specific models, ensuring compatibility
       config.thinkingConfig = { thinkingBudget: 2048 }; 
+    }
+
+    // Construct current turn contents
+    const currentParts: any[] = [];
+    if (message) {
+      currentParts.push({ text: message });
+    }
+    
+    if (currentAttachments && currentAttachments.length > 0) {
+      currentAttachments.forEach(att => {
+        // Strip data:image/...;base64, prefix for API
+        const base64Data = att.data.split(',')[1];
+        currentParts.push({
+          inlineData: {
+            mimeType: att.mimeType,
+            data: base64Data
+          }
+        });
+      });
     }
 
     const chat = ai.chats.create({
@@ -37,17 +56,42 @@ export const streamChatResponse = async (
       config: config,
     });
 
-    const result = await chat.sendMessageStream({ message });
+    const result = await chat.sendMessageStream({ 
+      content: { parts: currentParts } 
+    } as any); // Type assertion for flexibility with SDK versions
 
     for await (const chunk of result) {
       const c = chunk as GenerateContentResponse;
+      
+      const updateData: { text: string, images?: Attachment[] } = { text: '' };
+      
       if (c.text) {
-        onChunk(c.text);
+        updateData.text = c.text;
+      }
+
+      // Check for generated images
+      if (c.candidates?.[0]?.content?.parts) {
+        const images: Attachment[] = [];
+        for (const part of c.candidates[0].content.parts) {
+          if (part.inlineData) {
+            images.push({
+              mimeType: part.inlineData.mimeType,
+              data: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+            });
+          }
+        }
+        if (images.length > 0) {
+          updateData.images = images;
+        }
+      }
+
+      if (updateData.text || updateData.images) {
+         onUpdate(updateData);
       }
     }
   } catch (error) {
     console.error("Error streaming chat response:", error);
-    onChunk("\n\n*Sorry, I encountered an error processing your request.*");
+    onUpdate({ text: "\n\n*Sorry, I encountered an error processing your request.*" });
     throw error;
   }
 };
