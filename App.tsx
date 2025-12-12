@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [currentModel, setCurrentModel] = useState<string>(GeminiModel.FLASH);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   
   // Theme State
   const [theme, setTheme] = useState<Theme>('dark');
@@ -89,6 +90,24 @@ const App: React.FC = () => {
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, [theme]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdown = document.querySelector('.model-dropdown-container');
+      if (dropdown && !dropdown.contains(event.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+
+    if (isModelDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isModelDropdownOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -267,17 +286,24 @@ const App: React.FC = () => {
               </button>
             )}
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="relative group">
-                <button className="flex items-center gap-2 text-[15px] md:text-[17px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1F1F22] px-3 py-1.5 rounded-lg transition-colors group">
+              <div className="relative model-dropdown-container">
+                <button 
+                  onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                  className="flex items-center gap-2 text-[15px] md:text-[17px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1F1F22] px-3 py-1.5 rounded-lg transition-colors"
+                >
                   <span className="truncate max-w-[120px] md:max-w-none">{MODELS.find(m => m.id === currentModel)?.name || 'Qwen3-Max'}</span>
-                  <ChevronDown size={16} className="text-gray-500 group-hover:text-gray-800 dark:group-hover:text-gray-300 flex-shrink-0" strokeWidth={2.5} />
+                  <ChevronDown size={16} className={`text-gray-500 flex-shrink-0 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} strokeWidth={2.5} />
                 </button>
                 {/* Model Dropdown */}
-                 <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-[#2e2e32] rounded-xl shadow-xl overflow-hidden hidden group-hover:block z-50">
+                 {isModelDropdownOpen && (
+                 <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-[#2e2e32] rounded-xl shadow-xl overflow-hidden z-50">
                    {MODELS.map(model => (
                      <button
                        key={model.id}
-                       onClick={() => setCurrentModel(model.id)}
+                       onClick={() => {
+                         setCurrentModel(model.id);
+                         setIsModelDropdownOpen(false);
+                       }}
                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#2a2a2e] transition-colors flex flex-col ${currentModel === model.id ? 'bg-gray-50 dark:bg-[#2a2a2e]' : ''}`}
                      >
                         <div className="flex items-center justify-between">
@@ -288,6 +314,7 @@ const App: React.FC = () => {
                      </button>
                    ))}
                  </div>
+                 )}
               </div>
 
                {activeArtifact && (
