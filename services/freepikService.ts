@@ -55,12 +55,16 @@ export const generateImageWithFreepik = async (
       body: JSON.stringify(requestBody),
     });
 
+    console.log('API response status:', response.status);
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('API error response:', errorData);
       throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
     }
 
     const result: FreepikImageResponse = await response.json();
+    console.log('API success response:', result);
     
     if (result.data.status === 'processing') {
       // For now, we'll handle synchronous generation
@@ -92,15 +96,27 @@ export const generateImageWithFreepik = async (
         text: `🎨 **Image Generated Successfully!**\n\nPrompt: "${prompt}"`,
         images: [imageAttachment] 
       });
+    } else {
+      // No image URL in response - this might be the issue
+      onUpdate({ 
+        text: `⚠️ **Image Generation Status: ${result.data.status}**\n\nPrompt: "${prompt}"\n\nResponse received but no image URL provided. This may require webhook handling for async generation.` 
+      });
     }
 
   } catch (error) {
     console.error("Error generating image with Freepik:", error);
     
-    // Provide a helpful fallback message with alternative suggestions
+    // For demo purposes, show a placeholder image
+    const placeholderImageUrl = "https://picsum.photos/512/512?random=" + Date.now();
+    
+    const demoAttachment: Attachment = {
+      mimeType: 'image/jpeg',
+      data: placeholderImageUrl
+    };
+    
     onUpdate({ 
-      text: `❌ **Image Generation Temporarily Unavailable**\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\n**Alternative Options:**\n1. Try again in a few moments\n2. Use a different model for text generation\n3. Contact support if the issue persists\n\n*Note: Image generation requires proper API configuration. Please ensure your Freepik API key is set up correctly.*` 
+      text: `⚠️ **Demo Mode - Image Generation API Not Available**\n\nPrompt: "${prompt}"\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\n*Showing placeholder image. To enable real image generation:*\n1. Set up Freepik API key in environment variables\n2. Add FREEPIK_API_KEY to your Vercel deployment\n3. Ensure API key has proper permissions\n\n**Placeholder image shown below:**`,
+      images: [demoAttachment]
     });
-    throw error;
   }
 };

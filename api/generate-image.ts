@@ -45,6 +45,9 @@ export default async function handler(
       filter_nsfw: options.filter_nsfw !== false,
     };
 
+    console.log('Sending request to Freepik API with prompt:', prompt);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch('https://api.freepik.com/v1/ai/mystic', {
       method: 'POST',
       headers: {
@@ -53,6 +56,9 @@ export default async function handler(
       },
       body: JSON.stringify(requestBody),
     });
+
+    console.log('Freepik API response status:', response.status);
+    console.log('Freepik API response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -63,6 +69,7 @@ export default async function handler(
     }
 
     const result: FreepikImageResponse = await response.json();
+    console.log('Freepik API response:', JSON.stringify(result, null, 2));
     
     return res.status(200).json(result);
 
