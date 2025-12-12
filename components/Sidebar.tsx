@@ -43,15 +43,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="w-full h-full bg-gray-50 dark:bg-[#18181B] flex flex-col flex-shrink-0 font-sans transition-colors duration-200">
       {/* Header */}
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-           {/* Brand Logo */}
-           <div className="w-10 h-10 flex items-center justify-center rounded-lg overflow-hidden">
+        <div className="flex items-center gap-3">
+           {/* Main Brand Logo */}
+           <div className="w-9 h-9 flex items-center justify-center rounded-lg overflow-hidden bg-white dark:bg-gray-800 p-1">
              <img src={QWEN_LOGO_URL} alt="Brand Logo" className="w-full h-full object-contain" />
            </div>
-           {/* AI Avatar */}
-           <div className="w-8 h-8 flex items-center justify-center rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-             <img src={AI_AVATAR_URL} alt="AI Assistant" className="w-full h-full object-contain" />
-           </div>
+           {/* Brand Text */}
+           <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Qwen</span>
         </div>
         <button onClick={onToggle} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#27272A]">
           <PanelLeftClose size={20} />
