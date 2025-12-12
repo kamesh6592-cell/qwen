@@ -56,9 +56,9 @@ export const streamChatResponse = async (
       config: config,
     });
 
-    const result = await chat.sendMessageStream({ 
-      content: { parts: currentParts } 
-    } as any); // Type assertion for flexibility with SDK versions
+    const result = await chat.sendMessageStream({
+      message: currentParts.length > 0 ? currentParts : [{ text: message }]
+    });
 
     for await (const chunk of result) {
       const c = chunk as GenerateContentResponse;
