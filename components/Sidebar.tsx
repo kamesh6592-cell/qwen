@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, MessageSquare, ChevronDown, PanelLeftClose, MoreHorizontal, Settings, Archive, LogOut } from 'lucide-react';
 import { ChatSession } from '../types';
-import { USER_NAME, QWEN_LOGO_URL } from '../constants';
+import { USER_NAME, QWEN_LOGO_URL, AI_AVATAR_URL } from '../constants';
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -47,6 +47,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
            {/* Brand Logo */}
            <div className="w-10 h-10 flex items-center justify-center rounded-lg overflow-hidden">
              <img src={QWEN_LOGO_URL} alt="Brand Logo" className="w-full h-full object-contain" />
+           </div>
+           {/* AI Avatar */}
+           <div className="w-8 h-8 flex items-center justify-center rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+             <img src={AI_AVATAR_URL} alt="AI Assistant" className="w-full h-full object-contain" />
            </div>
         </div>
         <button onClick={onToggle} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#27272A]">

@@ -5,7 +5,7 @@ import { Message } from '../types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useToast } from './Toast';
-import { QWEN_LOGO_URL } from '../constants';
+import { QWEN_LOGO_URL, AI_AVATAR_URL } from '../constants';
 
 interface ChatMessageProps {
   message: Message;
@@ -66,7 +66,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
         {!isUser && (
            <div className="w-8 h-8 rounded-full bg-transparent flex-shrink-0 flex items-center justify-center mt-0.5">
              <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-full">
-                <img src={QWEN_LOGO_URL} alt="Qwen AI" className="w-full h-full object-cover" />
+                <img src={AI_AVATAR_URL} alt="AI Assistant" className="w-full h-full object-contain" />
              </div>
           </div>
         )}
