@@ -1,0 +1,7 @@
+{
+  "name": "Qwen Style Chat",
+  "description": "A replica of the Qwen chat interface powered by Google Gemini API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
