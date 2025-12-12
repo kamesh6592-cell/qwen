@@ -21,6 +21,64 @@ interface FreepikGenerationOptions {
   engine?: 'automatic' | 'freepik' | 'stable_diffusion';
 }
 
+// Helper function to poll for image completion
+const pollForCompletion = async (
+  imageId: string,
+  prompt: string,
+  onUpdate: (content: { text: string, images?: Attachment[] }) => void,
+  maxAttempts: number = 12, // 2 minutes max (12 * 10 seconds)
+  attempt: number = 1
+): Promise<void> => {
+  try {
+    const response = await fetch(`/api/check-image-status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Status check failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.data.image_url) {
+      // Image is ready!
+      const imageAttachment: Attachment = {
+        mimeType: 'image/png',
+        data: result.data.image_url
+      };
+      
+      onUpdate({ 
+        text: `🎨 **Image Generated Successfully!**\n\nPrompt: "${prompt}"\n\n✅ Completed after ${attempt * 10} seconds`,
+        images: [imageAttachment] 
+      });
+    } else if (attempt >= maxAttempts) {
+      // Timeout
+      onUpdate({ 
+        text: `⏰ **Generation Timeout**\n\nPrompt: "${prompt}"\n\nImage generation is taking longer than expected. Status: ${result.data.status}\n\nPlease try again or check Freepik dashboard for generation ID: ${imageId}` 
+      });
+    } else {
+      // Still processing, continue polling
+      onUpdate({ 
+        text: `🔄 **Image Generation In Progress...**\n\nPrompt: "${prompt}"\nStatus: ${result.data.status}\nAttempt: ${attempt}/${maxAttempts}\n\nChecking again in 10 seconds...` 
+      });
+      
+      // Wait 10 seconds and try again
+      setTimeout(() => {
+        pollForCompletion(imageId, prompt, onUpdate, maxAttempts, attempt + 1);
+      }, 10000);
+    }
+  } catch (error) {
+    console.error('Error polling for image completion:', error);
+    onUpdate({ 
+      text: `❌ **Error Checking Image Status**\n\nPrompt: "${prompt}"\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\nGeneration ID: ${imageId}` 
+    });
+  }
+};
+
 export const generateImageWithFreepik = async (
   prompt: string,
   options: Partial<FreepikGenerationOptions> = {},
@@ -66,24 +124,26 @@ export const generateImageWithFreepik = async (
     const result: FreepikImageResponse = await response.json();
     console.log('API success response:', result);
     
-    if (result.data.status === 'processing') {
-      // For now, we'll handle synchronous generation
-      // In a real implementation, you'd want to implement webhook handling for async processing
+    if (result.data.status === 'processing' || result.data.status === 'CREATED') {
+      // Update user that generation started and we're waiting for completion
       onUpdate({ 
-        text: `✅ Image generation started successfully!\n\nGeneration ID: ${result.data.id}\n\n*Note: This is a processing request. In a production environment, you would receive the image via webhook when generation completes.*` 
+        text: `🔄 **Image Generation In Progress...**\n\nPrompt: "${prompt}"\nStatus: ${result.data.status}\nGeneration ID: ${result.data.id}\n\nPolling for completion...` 
       });
       
-      // If webhook_url was provided and image_url is available immediately
+      // If image is immediately available
       if (result.data.image_url) {
         const imageAttachment: Attachment = {
           mimeType: 'image/png',
-          data: result.data.image_url // For Freepik, this will be a URL, not base64
+          data: result.data.image_url
         };
         
         onUpdate({ 
           text: `🎨 **Image Generated Successfully!**\n\nPrompt: "${prompt}"`,
           images: [imageAttachment] 
         });
+      } else {
+        // Poll for completion since no immediate image URL
+        await pollForCompletion(result.data.id, prompt, onUpdate);
       }
     } else if (result.data.image_url) {
       // Direct image URL response
@@ -97,9 +157,9 @@ export const generateImageWithFreepik = async (
         images: [imageAttachment] 
       });
     } else {
-      // No image URL in response - this might be the issue
+      // Unknown status
       onUpdate({ 
-        text: `⚠️ **Image Generation Status: ${result.data.status}**\n\nPrompt: "${prompt}"\n\nResponse received but no image URL provided. This may require webhook handling for async generation.` 
+        text: `⚠️ **Unexpected Response Status: ${result.data.status}**\n\nPrompt: "${prompt}"\n\nGeneration ID: ${result.data.id}` 
       });
     }
 
