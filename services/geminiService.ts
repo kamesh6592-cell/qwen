@@ -1,5 +1,6 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeminiModel, Attachment } from "../types";
+import { generateImageWithFreepik } from "./freepikService";
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -15,6 +16,12 @@ export const streamChatResponse = async (
 ) => {
   try {
     const modelName = modelId;
+    
+    // Handle image generation with Freepik
+    if (modelName === GeminiModel.IMAGE) {
+      await generateImageWithFreepik(message, {}, onUpdate);
+      return;
+    }
     
     // Configure tools
     const tools: any[] = [];
