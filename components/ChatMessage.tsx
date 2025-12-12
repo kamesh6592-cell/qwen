@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Copy, ThumbsUp, ThumbsDown, RotateCw, MoreHorizontal, Sparkles, ChevronDown, Check, Play } from 'lucide-react';
+import { Copy, ThumbsUp, ThumbsDown, RotateCw, MoreHorizontal, Sparkles, ChevronDown, Check, Play, Loader2 } from 'lucide-react';
 import { Message } from '../types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -22,7 +22,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
   const { showToast } = useToast();
 
   // Extract HTML code for preview detection
-  const htmlMatch = message.text.match(/```html([\s\S]*?)```/);
+  // Use a regex that handles potential whitespace after "html"
+  const htmlMatch = message.text.match(/```html\s*([\s\S]*?)```/);
   const hasHtml = !!htmlMatch;
   const htmlContent = htmlMatch ? htmlMatch[1] : '';
 
@@ -80,25 +81,38 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
           {!isUser && message.isThinking && (
              <div className="w-full mb-4">
                <button 
-                  onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-                  className="w-full flex items-center justify-between bg-gray-50 dark:bg-[#1f1f23] hover:bg-gray-100 dark:hover:bg-[#2a2a2e] border border-gray-200 dark:border-[#2e2e32] rounded-xl px-4 py-3 transition-colors text-left group/thinking"
+                  onClick={() => !isLoading && setIsThinkingExpanded(!isThinkingExpanded)}
+                  disabled={isLoading && isLast}
+                  className={`w-full flex items-center justify-between bg-gray-50 dark:bg-[#1f1f23] border border-gray-200 dark:border-[#2e2e32] rounded-xl px-4 py-3 transition-all text-left group/thinking ${
+                    isLoading && isLast 
+                      ? 'cursor-default opacity-80' 
+                      : 'hover:bg-gray-100 dark:hover:bg-[#2a2a2e] cursor-pointer'
+                  }`}
                >
                   <div className="flex items-center gap-2.5">
-                    <div className="bg-[#e0e7ff] dark:bg-[#2d2a4a] p-1 rounded-md">
-                        <Sparkles size={14} className="text-[#4f46e5] dark:text-[#818CF8]" />
+                    <div className={`p-1 rounded-md ${isLoading && isLast ? 'bg-[#e0e7ff]/50 dark:bg-[#2d2a4a]/50' : 'bg-[#e0e7ff] dark:bg-[#2d2a4a]'}`}>
+                        {isLoading && isLast ? (
+                           <Loader2 size={14} className="text-[#4f46e5] dark:text-[#818CF8] animate-spin" />
+                        ) : (
+                           <Sparkles size={14} className="text-[#4f46e5] dark:text-[#818CF8]" />
+                        )}
                     </div>
-                    <span className="text-[13px] font-medium text-gray-800 dark:text-gray-200">Thinking completed</span>
-                    <span className="text-[13px] text-gray-500 dark:text-gray-500 font-normal">81,920 tokens budget</span>
+                    <span className="text-[13px] font-medium text-gray-800 dark:text-gray-200">
+                        {isLoading && isLast ? 'Thinking...' : 'Thinking Process'}
+                    </span>
+                    {!isLoading && <span className="text-[13px] text-gray-500 dark:text-gray-500 font-normal hidden sm:inline">81,920 tokens budget</span>}
                   </div>
-                  {isThinkingExpanded ? (
-                    <ChevronDown size={16} className="text-gray-500 group-hover/thinking:text-gray-700 dark:group-hover/thinking:text-gray-300" />
-                  ) : (
-                    <ChevronDown size={16} className="text-gray-500 group-hover/thinking:text-gray-700 dark:group-hover/thinking:text-gray-300 transform -rotate-90" />
+                  {(!isLoading || !isLast) && (
+                    isThinkingExpanded ? (
+                      <ChevronDown size={16} className="text-gray-500 group-hover/thinking:text-gray-700 dark:group-hover/thinking:text-gray-300" />
+                    ) : (
+                      <ChevronDown size={16} className="text-gray-500 group-hover/thinking:text-gray-700 dark:group-hover/thinking:text-gray-300 transform -rotate-90" />
+                    )
                   )}
                </button>
                
-               {isThinkingExpanded && (
-                 <div className="mt-3 pl-2 relative">
+               {isThinkingExpanded && (!isLoading || !isLast) && (
+                 <div className="mt-3 pl-2 relative animate-in slide-in-from-top-2 duration-200">
                     <div className="absolute left-[21px] top-0 bottom-0 w-[2px] bg-gray-200 dark:bg-[#2e2e32]" />
                     <div className="ml-8 text-[14px] text-gray-600 dark:text-gray-400 leading-relaxed space-y-4">
                         <div className="flex gap-3">
@@ -106,9 +120,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
                                 <Check size={10} className="text-gray-500 dark:text-gray-400" />
                             </div>
                             <div>
-                                Okay, the user just said "hi" again. Let me check the conversation history.
+                                I have analyzed the user's request and context.
                                 <br/><br/>
-                                Looking back, the user first asked for simple HTML code, and I provided a basic example. Now they're greeting again. Maybe they want more help but aren't sure how to ask.
+                                <strong>Plan:</strong>
+                                <ul className="list-disc pl-4 mt-1 space-y-1">
+                                    <li>Identify the user's intent from the prompt.</li>
+                                    <li>Check available tools (Search, Code, etc).</li>
+                                    <li>Formulate a comprehensive and helpful response.</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -150,16 +169,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
                               <div className="flex items-center justify-between px-4 py-2 bg-[#F4F4F5] dark:bg-[#1a1a1d] border-b border-gray-200 dark:border-[#2e2e32]">
                                 <span className="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono lowercase">{lang}</span>
                                 <div className="flex items-center gap-3">
-                                  {isHtml && onPreview && (
-                                    <button 
-                                      onClick={() => onPreview(codeString, 'html')}
-                                      className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-[#5848BC] dark:hover:text-[#818CF8] transition-colors font-medium"
-                                      title="Preview HTML"
-                                    >
-                                      <Play size={14} />
-                                      Preview
-                                    </button>
-                                  )}
+                                  {/* Removed internal preview button */}
                                   <button 
                                     onClick={() => handleCopy(codeString)}
                                     className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -203,7 +213,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
           {/* Action Buttons (Only for AI, after generation) */}
           {showActions && (
             <div className="flex flex-col gap-3 mt-2 w-full animate-in fade-in slide-in-from-top-1 duration-300">
-              <div className="flex items-center justify-between w-full">
+               {/* Container for Preview + Icons */}
+              <div className="flex items-center gap-4 w-full select-none">
+                 
+                 {/* Preview Button (Primary Action) - Only if HTML is present */}
+                 {hasHtml && onPreview && (
+                    <button 
+                      onClick={() => onPreview(htmlContent, 'html')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5848BC] hover:bg-[#4839A3] text-white rounded-full text-[13px] font-medium transition-colors shadow-sm"
+                    >
+                      <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+                        <Play size={8} fill="currentColor" className="ml-0.5" />
+                      </div>
+                      Preview
+                    </button>
+                 )}
+
                  <div className="flex items-center gap-1">
                     <ActionButton icon={<Copy size={16} />} label="Copy" onClick={() => handleAction('copy')} />
                     <ActionButton icon={<ThumbsUp size={16} />} label="Good response" onClick={() => handleAction('good')} />
