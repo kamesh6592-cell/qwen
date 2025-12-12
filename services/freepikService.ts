@@ -27,23 +27,18 @@ export const generateImageWithFreepik = async (
   onUpdate: (content: { text: string, images?: Attachment[] }) => void
 ): Promise<void> => {
   try {
-    const apiKey = process.env.FREEPIK_API_KEY || process.env.API_KEY;
-    
-    if (!apiKey) {
-      throw new Error('Freepik API key not found. Please set FREEPIK_API_KEY or API_KEY environment variable.');
-    }
-
     const requestBody = {
       prompt,
-      resolution: options.resolution || '2k',
-      aspect_ratio: options.aspect_ratio || 'square_1_1',
-      model: options.model || 'realism',
-      creative_detailing: options.creative_detailing || 33,
-      hdr: options.hdr || 50,
-      adherence: options.adherence || 50,
-      engine: options.engine || 'automatic',
-      fixed_generation: false,
-      filter_nsfw: options.filter_nsfw !== false, // Default to true unless explicitly set to false
+      options: {
+        resolution: options.resolution || '2k',
+        aspect_ratio: options.aspect_ratio || 'square_1_1',
+        model: options.model || 'realism',
+        creative_detailing: options.creative_detailing || 33,
+        hdr: options.hdr || 50,
+        adherence: options.adherence || 50,
+        engine: options.engine || 'automatic',
+        filter_nsfw: options.filter_nsfw !== false, // Default to true unless explicitly set to false
+      }
     };
 
     // Update user with generation start message
@@ -51,18 +46,18 @@ export const generateImageWithFreepik = async (
       text: `🎨 Generating image: "${prompt}"\n\nPlease wait while I create your image...` 
     });
 
-    const response = await fetch('https://api.freepik.com/v1/ai/mystic', {
+    // Use our own API endpoint to avoid CORS issues
+    const response = await fetch('/api/generate-image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-freepik-api-key': apiKey,
       },
       body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Freepik API error: ${response.status} - ${errorData}`);
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
     }
 
     const result: FreepikImageResponse = await response.json();
@@ -101,8 +96,10 @@ export const generateImageWithFreepik = async (
 
   } catch (error) {
     console.error("Error generating image with Freepik:", error);
+    
+    // Provide a helpful fallback message with alternative suggestions
     onUpdate({ 
-      text: `❌ **Image Generation Failed**\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease check your API key and try again.` 
+      text: `❌ **Image Generation Temporarily Unavailable**\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\n**Alternative Options:**\n1. Try again in a few moments\n2. Use a different model for text generation\n3. Contact support if the issue persists\n\n*Note: Image generation requires proper API configuration. Please ensure your Freepik API key is set up correctly.*` 
     });
     throw error;
   }
