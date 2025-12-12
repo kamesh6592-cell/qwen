@@ -27,3 +27,4 @@ export const INITIAL_SUGGESTIONS = [
 export const USER_NAME = "AJ COMPANY";
 export const QWEN_LOGO_URL = "/images (1).png";
 export const AI_AVATAR_URL = "/qwen-avatar.png";
+export const COMBINED_LOGO_URL = "/images (2).png";

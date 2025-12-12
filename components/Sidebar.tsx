@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, MessageSquare, ChevronDown, PanelLeftClose, MoreHorizontal, Settings, Archive, LogOut } from 'lucide-react';
 import { ChatSession } from '../types';
-import { USER_NAME, QWEN_LOGO_URL, AI_AVATAR_URL } from '../constants';
+import { USER_NAME, QWEN_LOGO_URL, AI_AVATAR_URL, COMBINED_LOGO_URL } from '../constants';
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -43,13 +43,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="w-full h-full bg-gray-50 dark:bg-[#18181B] flex flex-col flex-shrink-0 font-sans transition-colors duration-200">
       {/* Header */}
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-           {/* Main Brand Logo */}
-           <div className="w-9 h-9 flex items-center justify-center rounded-lg overflow-hidden bg-white dark:bg-gray-800 p-1">
-             <img src={QWEN_LOGO_URL} alt="Brand Logo" className="w-full h-full object-contain" />
+        <div className="flex items-center">
+           {/* Combined Brand Logo with Text */}
+           <div className="h-8 flex items-center justify-start">
+             <img src={COMBINED_LOGO_URL} alt="Qwen Brand" className="h-full w-auto object-contain" />
            </div>
-           {/* Brand Text */}
-           <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Qwen</span>
         </div>
         <button onClick={onToggle} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#27272A]">
           <PanelLeftClose size={20} />
