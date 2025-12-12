@@ -37,12 +37,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, []);
 
-  if (!isOpen) {
-    return null;
-  }
-
+  // Removed the "if (!isOpen) return null" to allow parent to control visibility/transition via CSS container
+  
   return (
-    <div className="w-[280px] h-screen bg-gray-50 dark:bg-[#18181B] flex flex-col border-r border-gray-200 dark:border-[#27272A] flex-shrink-0 font-sans transition-colors duration-200">
+    <div className="w-full h-full bg-gray-50 dark:bg-[#18181B] flex flex-col flex-shrink-0 font-sans transition-colors duration-200">
       {/* Header */}
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -52,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
            </div>
           <span className="text-[22px] font-bold text-gray-800 dark:text-gray-200 tracking-tight">Qwen</span>
         </div>
-        <button onClick={onToggle} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors">
+        <button onClick={onToggle} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-gray-200 dark:hover:bg-[#27272A]">
           <PanelLeftClose size={20} />
         </button>
       </div>

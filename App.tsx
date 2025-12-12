@@ -17,16 +17,36 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentModel, setCurrentModel] = useState<string>(GeminiModel.FLASH);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   // Theme State
-  const [theme, setTheme] = useState<Theme>('dark'); // Default to dark as per design
-  const [isDarkMode, setIsDarkMode] = useState(true); // Track effective mode for JS-based styles (like syntax highlighter)
+  const [theme, setTheme] = useState<Theme>('dark');
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Artifact/Preview State
   const [isArtifactOpen, setIsArtifactOpen] = useState(false);
   const [activeArtifact, setActiveArtifact] = useState<{code: string, language: string} | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Mobile Detection
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarOpen(false); // Default closed on mobile
+      } else {
+        setIsSidebarOpen(true); // Default open on desktop
+      }
+    };
+    
+    // Initial check
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Initialize with one empty session if none exist
   useEffect(() => {
@@ -61,7 +81,6 @@ const App: React.FC = () => {
 
     updateTheme();
     
-    // Listen for system changes if theme is 'system'
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => {
       if (theme === 'system') updateTheme();
@@ -86,9 +105,15 @@ const App: React.FC = () => {
     setCurrentSessionId(newSession.id);
     setIsArtifactOpen(false);
     setActiveArtifact(null);
+    if (isMobile) setIsSidebarOpen(false);
   };
 
   const getCurrentSession = () => sessions.find((s) => s.id === currentSessionId);
+
+  const handleSessionSelect = (id: string) => {
+    setCurrentSessionId(id);
+    if (isMobile) setIsSidebarOpen(false);
+  };
 
   const handleSendMessage = async (text: string, useSearch: boolean, useThinking: boolean) => {
     if (!currentSessionId) return;
@@ -96,7 +121,6 @@ const App: React.FC = () => {
     const session = getCurrentSession();
     if (!session) return;
 
-    // 1. Add User Message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -104,7 +128,6 @@ const App: React.FC = () => {
       timestamp: Date.now(),
     };
 
-    // Update state optimistically
     const updatedSessions = sessions.map((s) => {
       if (s.id === currentSessionId) {
         return {
@@ -118,17 +141,15 @@ const App: React.FC = () => {
     setSessions(updatedSessions);
     setIsLoading(true);
 
-    // 2. Prepare AI Message Placeholder
     const aiMessageId = (Date.now() + 1).toString();
     const aiMessage: Message = {
       id: aiMessageId,
       role: 'model',
-      text: '', // Start empty
+      text: '',
       timestamp: Date.now() + 1,
       isThinking: useThinking
     };
     
-    // Insert empty AI message
      setSessions((prev) => prev.map((s) => {
       if (s.id === currentSessionId) {
         return { ...s, messages: [...s.messages, aiMessage] };
@@ -137,16 +158,13 @@ const App: React.FC = () => {
     }));
 
     try {
-      // 3. Stream Response
       let accumulatedText = "";
       
-      // Prepare history for API
       const apiHistory = session.messages.map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
       }));
 
-      // Call service
       await streamChatResponse(
         currentModel,
         apiHistory,
@@ -185,56 +203,76 @@ const App: React.FC = () => {
   const isChatEmpty = !currentSession || currentSession.messages.length === 0;
 
   return (
-    <div className="flex h-screen bg-white dark:bg-[#101011] overflow-hidden text-gray-900 dark:text-gray-200 font-sans transition-colors duration-200">
-      {/* Sidebar */}
-      <Sidebar 
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSelectSession={setCurrentSessionId}
-        onNewChat={createNewSession}
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(false)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+    <div className="flex h-[100dvh] bg-white dark:bg-[#101011] overflow-hidden text-gray-900 dark:text-gray-200 font-sans transition-colors duration-200 relative">
+      
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={`
+        flex-shrink-0 h-full bg-gray-50 dark:bg-[#18181B] border-r border-gray-200 dark:border-[#27272A] transition-all duration-300 ease-in-out z-50
+        ${isMobile ? 'fixed inset-y-0 left-0 shadow-2xl' : 'relative'}
+        ${isSidebarOpen ? 'w-[280px] translate-x-0' : 'w-0 -translate-x-full md:w-0 md:-translate-x-0 overflow-hidden border-none'}
+      `}>
+        <div className="w-[280px] h-full">
+           <Sidebar 
+            sessions={sessions}
+            currentSessionId={currentSessionId}
+            onSelectSession={handleSessionSelect}
+            onNewChat={createNewSession}
+            isOpen={true} // Always render internal content, layout handled by parent div
+            onToggle={() => setIsSidebarOpen(false)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+        </div>
+      </div>
 
       {/* Main Content Wrapper */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#101011] transition-colors duration-200">
+      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#101011] transition-colors duration-200 relative">
         
         {/* Top Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-[#101011]/90 backdrop-blur-sm z-10 border-b border-transparent">
-          <div className="flex items-center gap-3">
-             {!isSidebarOpen && (
-              <button onClick={() => setIsSidebarOpen(true)} className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors p-1">
-                <PanelLeft size={22} />
+        <div className="flex items-center justify-between px-3 md:px-4 py-3 bg-white/90 dark:bg-[#101011]/90 backdrop-blur-sm z-10 border-b border-transparent sticky top-0">
+          <div className="flex items-center gap-2 md:gap-3">
+             {(!isSidebarOpen || isMobile) && (
+              <button onClick={() => setIsSidebarOpen(true)} className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1f1f22]">
+                <PanelLeft size={20} />
               </button>
             )}
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 text-[17px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1F1F22] px-3 py-1.5 rounded-lg transition-colors group">
-                <span>{MODELS.find(m => m.id === currentModel)?.name || 'Qwen3-Max'}</span>
-                <ChevronDown size={16} className="text-gray-500 group-hover:text-gray-800 dark:group-hover:text-gray-300" strokeWidth={2.5} />
+            <div className="flex items-center gap-2 md:gap-3">
+              <button className="flex items-center gap-2 text-[15px] md:text-[17px] font-bold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#1F1F22] px-3 py-1.5 rounded-lg transition-colors group">
+                <span className="truncate max-w-[120px] md:max-w-none">{MODELS.find(m => m.id === currentModel)?.name || 'Qwen3-Max'}</span>
+                <ChevronDown size={16} className="text-gray-500 group-hover:text-gray-800 dark:group-hover:text-gray-300 flex-shrink-0" strokeWidth={2.5} />
               </button>
-               <button 
-                  onClick={() => setIsArtifactOpen(!isArtifactOpen)}
-                  className={`p-1.5 rounded-md transition-colors ${isArtifactOpen ? 'bg-[#5848BC] text-white' : 'text-[#5848BC] hover:bg-gray-100 dark:hover:bg-[#1F1F22]'}`}
-                >
-                 <SquareSplitHorizontal size={20} strokeWidth={2} />
-              </button>
+               {activeArtifact && (
+                 <button 
+                    onClick={() => setIsArtifactOpen(!isArtifactOpen)}
+                    className={`p-2 rounded-md transition-colors ${isArtifactOpen ? 'bg-[#5848BC] text-white' : 'text-[#5848BC] hover:bg-gray-100 dark:hover:bg-[#1F1F22]'}`}
+                    title="Toggle Web Preview"
+                  >
+                   <SquareSplitHorizontal size={20} strokeWidth={2} />
+                </button>
+               )}
             </div>
           </div>
           <div>
-             <button className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 p-2">
+             <button className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1f1f22]">
                 <MoreHorizontalIcon />
              </button>
           </div>
         </div>
 
         {/* Split View Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
           
           {/* Chat Column */}
-          <div className="flex-1 flex flex-col relative min-w-0 transition-all duration-300">
-            <div className="flex-1 overflow-y-auto px-4 custom-scrollbar">
-              <div className={`mx-auto h-full flex flex-col transition-all duration-300 ${isArtifactOpen ? 'max-w-3xl' : 'max-w-[850px]'}`}>
+          <div className={`flex-1 flex flex-col relative min-w-0 transition-all duration-300 ${isArtifactOpen && !isMobile ? 'mr-0' : ''}`}>
+            <div className="flex-1 overflow-y-auto px-2 md:px-4 custom-scrollbar">
+              <div className={`mx-auto h-full flex flex-col transition-all duration-300 ${isArtifactOpen && !isMobile ? 'max-w-3xl' : 'max-w-[850px]'}`}>
                 {isChatEmpty ? (
                   <EmptyState />
                 ) : (
@@ -256,9 +294,9 @@ const App: React.FC = () => {
             </div>
 
             {/* Input Area (Floats over Chat Column) */}
-            <div className={`absolute bottom-0 left-0 right-0 ${isChatEmpty ? 'top-1/2 -translate-y-1/2' : ''} transition-all duration-300 pointer-events-none`}>
-               <div className={`w-full h-full flex flex-col ${isChatEmpty ? 'justify-center' : 'justify-end'} pointer-events-auto bg-gradient-to-t from-white via-white via-60% dark:from-[#101011] dark:via-[#101011] dark:via-60% to-transparent pt-12`}>
-                  <div className={`mx-auto w-full transition-all duration-300 ${isArtifactOpen ? 'max-w-3xl' : ''}`}>
+            <div className={`absolute bottom-0 left-0 right-0 z-20 ${isChatEmpty ? 'top-1/2 -translate-y-1/2 mt-8 md:mt-0' : ''} transition-all duration-300 pointer-events-none`}>
+               <div className={`w-full h-full flex flex-col ${isChatEmpty ? 'justify-center' : 'justify-end'} pointer-events-auto bg-gradient-to-t from-white via-white via-70% dark:from-[#101011] dark:via-[#101011] dark:via-70% to-transparent pt-12 pb-2 md:pb-6`}>
+                  <div className={`mx-auto w-full px-2 md:px-4 transition-all duration-300 ${isArtifactOpen && !isMobile ? 'max-w-3xl' : 'max-w-[850px]'}`}>
                     <InputArea 
                       onSendMessage={handleSendMessage} 
                       isLoading={isLoading}
@@ -269,15 +307,27 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Artifact Panel Column */}
-          {isArtifactOpen && activeArtifact && (
-            <ArtifactPanel 
-              isOpen={isArtifactOpen}
-              onClose={() => setIsArtifactOpen(false)}
-              code={activeArtifact.code}
-              language={activeArtifact.language}
-            />
-          )}
+          {/* Artifact Panel Column / Overlay */}
+          <div className={`
+             transition-all duration-300 ease-in-out bg-white dark:bg-[#101011] border-l border-gray-200 dark:border-[#27272A] shadow-xl z-30
+             ${isMobile 
+                ? 'fixed inset-0 w-full' 
+                : 'relative h-full'}
+             ${isArtifactOpen 
+                ? (isMobile ? 'translate-y-0' : 'w-1/2 min-w-[450px] translate-x-0') 
+                : (isMobile ? 'translate-y-full' : 'w-0 min-w-0 translate-x-full overflow-hidden border-none')}
+          `}>
+             {activeArtifact && (
+               <div className="h-full w-full">
+                  <ArtifactPanel 
+                    isOpen={true} // Content always rendered in container
+                    onClose={() => setIsArtifactOpen(false)}
+                    code={activeArtifact.code}
+                    language={activeArtifact.language}
+                  />
+               </div>
+             )}
+          </div>
 
         </div>
       </div>
