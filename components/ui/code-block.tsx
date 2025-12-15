@@ -1,18 +1,8 @@
-"use client"
-
-import { Geist_Mono } from 'next/font/google';
 import { highlight } from 'sugar-high';
 import React, { useCallback, useMemo, useState, lazy, Suspense } from 'react';
 import { cn } from "@/lib/utils"
 import { Check, Copy, WrapText, ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  preload: true,
-  display: 'swap',
-});
 
 interface CodeBlockProps {
   language: string | undefined;
@@ -98,7 +88,7 @@ const LazyCodeBlockComponent: React.FC<CodeBlockProps> = ({ children, language, 
             !isWrapped && 'whitespace-pre overflow-x-auto',
           )}
           style={{
-            fontFamily: geistMono.style.fontFamily,
+            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
           }}
           dangerouslySetInnerHTML={{
             __html: highlightedCode,
@@ -189,7 +179,7 @@ const SyncCodeBlock: React.FC<CodeBlockProps> = ({ language, children, elementKe
             !isWrapped && 'whitespace-pre overflow-x-auto',
           )}
           style={{
-            fontFamily: geistMono.style.fontFamily,
+            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
             lineHeight: '1.6',
           }}
           dangerouslySetInnerHTML={{
