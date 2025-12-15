@@ -20,11 +20,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const { showToast } = useToast();
 
-  // Extract HTML code for preview detection
-  // Use a regex that handles potential whitespace after "html"
-  const htmlMatch = message.text.match(/```html\s*([\s\S]*?)```/);
-  const hasHtml = !!htmlMatch;
-  const htmlContent = htmlMatch ? htmlMatch[1] : '';
+  // Check if message has HTML code blocks for preview detection
+  const hasHtml = message.text.includes('```html');
 
   // Determine if actions should be shown: only for AI, and if it's the last message, only when NOT loading.
   const showActions = !isUser && (!isLast || !isLoading);
@@ -226,7 +223,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
                  {/* Preview Button (Primary Action) - Only if HTML is present */}
                  {hasHtml && onPreview && (
                     <button 
-                      onClick={() => onPreview(htmlContent, 'html')}
+                      onClick={() => {
+                        const htmlMatch = message.text.match(/```html\s*([\s\S]*?)```/);
+                        const htmlContent = htmlMatch ? htmlMatch[1] : '';
+                        onPreview(htmlContent, 'html');
+                      }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5848BC] hover:bg-[#4839A3] text-white rounded-full text-[13px] font-medium transition-colors shadow-sm"
                     >
                       <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
