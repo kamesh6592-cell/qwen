@@ -81,9 +81,11 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ isOpen, onClose, c
              </div>
             <div className="p-4">
               <CodeBlock 
-                code={code}
                 language={language || 'html'}
-              />
+                elementKey="artifact-code"
+              >
+                {code}
+              </CodeBlock>
             </div>
           </div>
         )}
