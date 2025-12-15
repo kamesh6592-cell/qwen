@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Copy, ThumbsUp, ThumbsDown, RotateCw, MoreHorizontal, Sparkles, ChevronDown, Check, Play, Loader2 } from 'lucide-react';
 import { Message } from '../types';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodeBlock } from '@/components/ui/code-block';
 import { useToast } from './Toast';
 import { QWEN_LOGO_URL, AI_AVATAR_URL } from '../constants';
 
@@ -193,14 +192,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast, isLoa
                                   </div>
                                 </div>
                                 <div className="p-0 overflow-x-auto text-[13px]">
-                                  <SyntaxHighlighter
-                                    language={lang}
-                                    style={isDarkMode ? vscDarkPlus : vs}
-                                    customStyle={{ margin: 0, padding: '1.25rem', background: 'transparent' }} // Let container handle bg
-                                    wrapLongLines={true}
-                                  >
+                                  <CodeBlock language={lang} elementKey={`chat-code-${Math.random()}`}>
                                     {codeString}
-                                  </SyntaxHighlighter>
+                                  </CodeBlock>
                                 </div>
                               </div>
                             );

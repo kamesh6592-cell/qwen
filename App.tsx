@@ -5,6 +5,7 @@ import { EmptyState } from './components/EmptyState';
 import { ChatMessage } from './components/ChatMessage';
 import { ArtifactPanel } from './components/ArtifactPanel';
 import { Settings } from './components/Settings';
+import { Toaster } from './components/ui/toaster';
 import { ChatSession, Message, GeminiModel, Theme, Attachment } from './types';
 import { INITIAL_SUGGESTIONS, MODELS } from './constants';
 import { streamChatResponse } from './services/geminiService';
@@ -408,6 +409,7 @@ const App: React.FC = () => {
         currentTheme={theme}
         onThemeChange={setTheme}
       />
+      <Toaster />
     </div>
   );
 };

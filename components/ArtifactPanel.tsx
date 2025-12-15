@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Maximize2, BookOpen, Code, Eye } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { CodeBlock } from '@/components/ui/code-block';
 
 interface ArtifactPanelProps {
   isOpen: boolean;
@@ -81,22 +80,10 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ isOpen, onClose, c
                 <span>{language}</span>
              </div>
             <div className="p-4">
-              <SyntaxHighlighter
+              <CodeBlock 
+                code={code}
                 language={language || 'html'}
-                style={vscDarkPlus}
-                customStyle={{
-                  margin: 0,
-                  padding: '0',
-                  background: 'transparent',
-                  fontSize: '13px',
-                  lineHeight: '1.6',
-                }}
-                showLineNumbers={true}
-                lineNumberStyle={{ color: '#52525b', minWidth: '3em', paddingRight: '1em', textAlign: 'right' }}
-                wrapLines={true}
-              >
-                {code}
-              </SyntaxHighlighter>
+              />
             </div>
           </div>
         )}
